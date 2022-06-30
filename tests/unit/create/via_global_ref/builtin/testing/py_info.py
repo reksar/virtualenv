@@ -1,10 +1,11 @@
+from pathlib import Path
+
 from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.info import PY2
-from virtualenv.util.path import Path
 
 
 def fixture_file(fixture_name):
-    file_mask = "*{}.json".format(fixture_name)
+    file_mask = f"*{fixture_name}.json"
     files = Path(__file__).parent.parent.rglob(file_mask)
     try:
         return next(files)

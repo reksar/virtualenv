@@ -1,9 +1,8 @@
-from __future__ import absolute_import, unicode_literals
-
 import contextlib
 import os
 import subprocess
 import sys
+from pathlib import Path
 from stat import S_IWGRP, S_IWOTH, S_IWUSR
 from threading import Thread
 
@@ -15,7 +14,6 @@ from virtualenv.info import fs_supports_symlink
 from virtualenv.run import cli_run
 from virtualenv.seed.wheels.embed import BUNDLE_FOLDER, BUNDLE_SUPPORT
 from virtualenv.util.path import safe_delete
-from virtualenv.util.six import ensure_text
 from virtualenv.util.subprocess import Popen
 
 
@@ -56,12 +54,12 @@ def test_seed_link_via_app_data(tmp_path, coverage_env, current_fastest, copies)
     assert pip in files_post_first_create
     assert setuptools in files_post_first_create
     for pip_exe in [
-        result.creator.script_dir / "pip{}{}".format(suffix, result.creator.exe.suffix)
+        result.creator.script_dir / f"pip{suffix}{result.creator.exe.suffix}"
         for suffix in (
             "",
-            "{}".format(current.version_info.major),
-            "{}.{}".format(current.version_info.major, current.version_info.minor),
-            "-{}.{}".format(current.version_info.major, current.version_info.minor),
+            f"{current.version_info.major}",
+            f"{current.version_info.major}.{current.version_info.minor}",
+            f"-{current.version_info.major}.{current.version_info.minor}",
         )
     ]:
         assert pip_exe.exists()
@@ -117,8 +115,8 @@ def test_seed_link_via_app_data(tmp_path, coverage_env, current_fastest, copies)
         post_run = set(site_package.iterdir()) - patch_files
         assert not post_run, "\n".join(str(i) for i in post_run)
 
-    if sys.version_info[0:2] == (3, 4) and os.environ.get(str("PIP_REQ_TRACKER")):
-        os.environ.pop(str("PIP_REQ_TRACKER"))
+    if sys.version_info[0:2] == (3, 4) and os.environ.get("PIP_REQ_TRACKER"):
+        os.environ.pop("PIP_REQ_TRACKER")
 
 
 @contextlib.contextmanager
@@ -205,7 +203,7 @@ def test_populated_read_only_cache_and_copied_app_data(tmp_path, current_fastest
 @pytest.mark.slow
 @pytest.mark.parametrize("pkg", ["pip", "setuptools", "wheel"])
 def test_base_bootstrap_link_via_app_data_no(tmp_path, coverage_env, current_fastest, session_app_data, pkg):
-    create_cmd = [str(tmp_path), "--seeder", "app-data", "--no-{}".format(pkg)]
+    create_cmd = [str(tmp_path), "--seeder", "app-data", f"--no-{pkg}"]
     result = cli_run(create_cmd)
     assert not (result.creator.purelib / pkg).exists()
     for key in {"pip", "setuptools", "wheel"} - {pkg}:
@@ -236,7 +234,7 @@ def _run_parallel_threads(tmp_path):
             as_str = str(exception)
             exceptions.append(as_str)
 
-    threads = [Thread(target=_run, args=("env{}".format(i),)) for i in range(1, 3)]
+    threads = [Thread(target=_run, args=(f"env{i}",)) for i in range(1, 3)]
     for thread in threads:
         thread.start()
     for thread in threads:

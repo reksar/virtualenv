@@ -1,12 +1,10 @@
-from __future__ import absolute_import, unicode_literals
-
 import sys
+from pathlib import Path
 
 import pytest
 
 from virtualenv import cli_run
 from virtualenv.info import IS_PYPY
-from virtualenv.util.six import ensure_text
 from virtualenv.util.subprocess import run_cmd
 
 

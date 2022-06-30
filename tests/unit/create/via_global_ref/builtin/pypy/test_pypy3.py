@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 import pytest
 from testing.helpers import contains_exe, contains_ref
 from testing.path import join as path

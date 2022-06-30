@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 import subprocess
 import sys
 
@@ -24,4 +22,4 @@ def test_windows_py2_cwd_works(tmp_path):
         cwd=cwd,
         universal_newlines=True,
     )
-    assert result == "{}\n".format(cwd)
+    assert result == f"{cwd}\n"

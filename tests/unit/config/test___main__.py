@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 import re
 import sys
 
@@ -70,7 +68,7 @@ def test_session_report_full(session_app_data, tmp_path, capsys):
 
 def _match_regexes(lines, regexes):
     for line, regex in zip(lines, regexes):
-        comp_regex = re.compile(r"^{}$".format(regex))
+        comp_regex = re.compile(rf"^{regex}$")
         assert comp_regex.match(line), line
 
 

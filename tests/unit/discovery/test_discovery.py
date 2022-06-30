@@ -1,9 +1,8 @@
-from __future__ import absolute_import, unicode_literals
-
 import logging
 import os
 import sys
 from argparse import Namespace
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -11,8 +10,6 @@ import pytest
 from virtualenv.discovery.builtin import Builtin, get_interpreter
 from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.info import fs_supports_symlink
-from virtualenv.util.path import Path
-from virtualenv.util.six import ensure_text
 
 
 @pytest.mark.skipif(not fs_supports_symlink(), reason="symlink not supported")
@@ -34,15 +31,15 @@ def test_discovery_via_path(monkeypatch, case, tmp_path, caplog, session_app_dat
     pyvenv_cfg = Path(sys.executable).parents[1] / "pyvenv.cfg"
     if pyvenv_cfg.exists():
         (target / pyvenv_cfg.name).write_bytes(pyvenv_cfg.read_bytes())
-    new_path = os.pathsep.join([str(target)] + os.environ.get(str("PATH"), str("")).split(os.pathsep))
-    monkeypatch.setenv(str("PATH"), new_path)
+    new_path = os.pathsep.join([str(target)] + os.environ.get("PATH", "").split(os.pathsep))
+    monkeypatch.setenv("PATH", new_path)
     interpreter = get_interpreter(core, [])
 
     assert interpreter is not None
 
 
 def test_discovery_via_path_not_found(tmp_path, monkeypatch):
-    monkeypatch.setenv(str("PATH"), str(tmp_path))
+    monkeypatch.setenv("PATH", str(tmp_path))
     interpreter = get_interpreter(uuid4().hex, [])
     assert interpreter is None
 

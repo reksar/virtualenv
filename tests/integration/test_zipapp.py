@@ -1,16 +1,13 @@
-from __future__ import absolute_import, unicode_literals
-
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 from flaky import flaky
 
 from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.run import cli_run
-from virtualenv.util.path import Path
-from virtualenv.util.six import ensure_text
 
 HERE = Path(__file__).parent
 CURRENT = PythonInfo.current_system()
@@ -33,7 +30,7 @@ def zipapp_build_env(tmp_path_factory):
                         [
                             "-vvv",
                             "-p",
-                            "{}3.{}".format(impl, version),
+                            f"{impl}3.{version}",
                             "--activators",
                             "",
                             str(create_env_path),

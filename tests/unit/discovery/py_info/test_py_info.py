@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 import copy
 import itertools
 import json
@@ -8,6 +6,7 @@ import os
 import sys
 import sysconfig
 from collections import namedtuple
+from pathlib import Path
 from textwrap import dedent
 
 import pytest
@@ -16,7 +15,6 @@ from virtualenv.discovery import cached_py_info
 from virtualenv.discovery.py_info import PythonInfo, VersionInfo
 from virtualenv.discovery.py_spec import PythonSpec
 from virtualenv.info import IS_PYPY, fs_supports_symlink
-from virtualenv.util.path import Path
 
 CURRENT = PythonInfo.current_system()
 
@@ -70,7 +68,7 @@ def test_bad_exe_py_info_no_raise(tmp_path, caplog, capsys, session_app_data):
                     )
                 ),
                 [sys.version_info[0 : i + 1] for i in range(3)],
-                ["", "-{}".format(CURRENT.architecture)],
+                ["", f"-{CURRENT.architecture}"],
             )
         ),
     ),
@@ -83,7 +81,7 @@ def test_satisfy_py_info(spec):
 
 def test_satisfy_not_arch():
     parsed_spec = PythonSpec.from_string_spec(
-        "{}-{}".format(CURRENT.implementation, 64 if CURRENT.architecture == 32 else 32),
+        f"{CURRENT.implementation}-{64 if CURRENT.architecture == 32 else 32}",
     )
     matches = CURRENT.satisfies(parsed_spec, True)
     assert matches is False
@@ -106,7 +104,7 @@ _NON_MATCH_VER = _generate_not_match_current_interpreter_version()
 
 @pytest.mark.parametrize("spec", _NON_MATCH_VER)
 def test_satisfy_not_version(spec):
-    parsed_spec = PythonSpec.from_string_spec("{}{}".format(CURRENT.implementation, spec))
+    parsed_spec = PythonSpec.from_string_spec(f"{CURRENT.implementation}{spec}")
     matches = CURRENT.satisfies(parsed_spec, True)
     assert matches is False
 
@@ -271,11 +269,11 @@ def test_py_info_ignores_distutils_config(monkeypatch, tmp_path):
     py_info = PythonInfo.from_exe(sys.executable)
     distutils = py_info.distutils_install
     for key, value in distutils.items():
-        assert not value.startswith(str(tmp_path)), "{}={}".format(key, value)
+        assert not value.startswith(str(tmp_path)), f"{key}={value}"
 
 
 def test_discover_exe_on_path_non_spec_name_match(mocker):
-    suffixed_name = "python{}.{}m".format(CURRENT.version_info.major, CURRENT.version_info.minor)
+    suffixed_name = f"python{CURRENT.version_info.major}.{CURRENT.version_info.minor}m"
     if sys.platform == "win32":
         suffixed_name += Path(CURRENT.original_executable).suffix
     spec = PythonSpec.from_string_spec(suffixed_name)
@@ -284,14 +282,14 @@ def test_discover_exe_on_path_non_spec_name_match(mocker):
 
 
 def test_discover_exe_on_path_non_spec_name_not_match(mocker):
-    suffixed_name = "python{}.{}m".format(CURRENT.version_info.major, CURRENT.version_info.minor)
+    suffixed_name = f"python{CURRENT.version_info.major}.{CURRENT.version_info.minor}m"
     if sys.platform == "win32":
         suffixed_name += Path(CURRENT.original_executable).suffix
     spec = PythonSpec.from_string_spec(suffixed_name)
     mocker.patch.object(
         CURRENT,
         "original_executable",
-        str(Path(CURRENT.executable).parent / "e{}".format(suffixed_name)),
+        str(Path(CURRENT.executable).parent / f"e{suffixed_name}"),
     )
     assert CURRENT.satisfies(spec, impl_must_match=True) is False
 
@@ -311,7 +309,7 @@ def test_py_info_to_system_raises(session_app_data, mocker, caplog, skip_if_test
     assert result is None
     log = caplog.records[-1]
     assert log.levelno == logging.INFO
-    expected = "ignore {} due cannot resolve system due to RuntimeError('failed to detect ".format(sys.executable)
+    expected = f"ignore {sys.executable} due cannot resolve system due to RuntimeError('failed to detect "
     assert expected in log.message
 
 
@@ -378,6 +376,6 @@ def test_custom_venv_install_scheme_is_prefered(mocker):
     mocker.patch("sysconfig._INSTALL_SCHEMES", sysconfig_install_schemes)
 
     pyinfo = PythonInfo()
-    pyver = "{}.{}".format(pyinfo.version_info.major, pyinfo.version_info.minor)
+    pyver = f"{pyinfo.version_info.major}.{pyinfo.version_info.minor}"
     assert pyinfo.install_path("scripts") == "bin"
-    assert pyinfo.install_path("purelib").replace(os.sep, "/") == "lib/python{}/site-packages".format(pyver)
+    assert pyinfo.install_path("purelib").replace(os.sep, "/") == f"lib/python{pyver}/site-packages"

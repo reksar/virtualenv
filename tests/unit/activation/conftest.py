@@ -1,18 +1,16 @@
-from __future__ import absolute_import, unicode_literals
-
 import os
 import re
 import shutil
 import subprocess
 import sys
 from os.path import dirname, normcase
+from pathlib import Path
 
 import pytest
 import six
 
 from virtualenv.info import IS_PYPY, PY2, WIN_CPYTHON_2
 from virtualenv.run import cli_run
-from virtualenv.util.path import Path
 from virtualenv.util.six import ensure_str, ensure_text
 from virtualenv.util.subprocess import Popen
 
@@ -22,7 +20,7 @@ else:
     from shlex import quote
 
 
-class ActivationTester(object):
+class ActivationTester:
     def __init__(self, of_class, session, cmd, activate_script, extension):
         self.of_class = of_class
         self._creator = session.creator
@@ -55,15 +53,15 @@ class ActivationTester(object):
                 self._version = exception
                 if raise_on_fail:
                     raise
-                return RuntimeError("{} is not available due {}".format(self, exception))
+                return RuntimeError(f"{self} is not available due {exception}")
         return self._version
 
     def __unicode__(self):
         return "{}(\nversion={!r},\ncreator={},\ninterpreter={})".format(
             self.__class__.__name__,
             self._version,
-            six.text_type(self._creator),
-            six.text_type(self._creator.interpreter),
+            str(self._creator),
+            str(self._creator.interpreter),
         )
 
     def __repr__(self):
@@ -84,7 +82,7 @@ class ActivationTester(object):
         test_script = self._generate_test_script(activate_script, tmp_path)
         monkeypatch.chdir(ensure_text(str(tmp_path)))
 
-        monkeypatch.delenv(str("VIRTUAL_ENV"), raising=False)
+        monkeypatch.delenv("VIRTUAL_ENV", raising=False)
         invoke, env = self._invoke_script + [ensure_text(str(test_script))], self.env(tmp_path)
 
         try:
@@ -108,17 +106,17 @@ class ActivationTester(object):
         env = os.environ.copy()
         # add the current python executable folder to the path so we already have another python on the path
         # also keep the path so the shells (fish, bash, etc can be discovered)
-        env[str("PYTHONIOENCODING")] = str("utf-8")
-        env[str("PATH")] = os.pathsep.join([dirname(sys.executable)] + env.get(str("PATH"), str("")).split(os.pathsep))
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PATH"] = os.pathsep.join([dirname(sys.executable)] + env.get("PATH", "").split(os.pathsep))
         # clear up some environment variables so they don't affect the tests
-        for key in [k for k in env.keys() if k.startswith(str("_OLD")) or k.startswith(str("VIRTUALENV_"))]:
+        for key in [k for k in env.keys() if k.startswith("_OLD") or k.startswith("VIRTUALENV_")]:
             del env[key]
         return env
 
     def _generate_test_script(self, activate_script, tmp_path):
         commands = self._get_test_lines(activate_script)
         script = ensure_text(os.linesep).join(commands)
-        test_script = tmp_path / "script.{}".format(self.extension)
+        test_script = tmp_path / f"script.{self.extension}"
         with open(ensure_text(str(test_script)), "wb") as file_handler:
             file_handler.write(script.encode(self.script_encoding))
         return test_script
@@ -150,7 +148,7 @@ class ActivationTester(object):
         assert self.norm_path(out[3]) == self.norm_path(self._creator.dest).replace("\\\\", "\\"), raw
         # Some attempts to test the prompt output print more than 1 line.
         # So we need to check if the prompt exists on any of them.
-        prompt_text = "({}) ".format(self._creator.env_name)
+        prompt_text = f"({self._creator.env_name}) "
         assert any(prompt_text in line for line in out[4:-3]), raw
 
         assert out[-3] == "wrote pydoc_test.html", raw
@@ -164,7 +162,7 @@ class ActivationTester(object):
         return quote(s)
 
     def python_cmd(self, cmd):
-        return "{} -c {}".format(os.path.basename(sys.executable), self.quote(cmd))
+        return f"{os.path.basename(sys.executable)} -c {self.quote(cmd)}"
 
     def print_python_exe(self):
         return self.python_cmd(
@@ -174,7 +172,7 @@ class ActivationTester(object):
         )
 
     def print_os_env_var(self, var):
-        val = '"{}"'.format(var)
+        val = f'"{var}"'
         return self.python_cmd(
             "import os; import sys; v = os.environ.get({}); print({})".format(
                 val,
@@ -188,7 +186,7 @@ class ActivationTester(object):
     def activate_call(self, script):
         cmd = self.quote(ensure_text(str(self.activate_cmd)))
         scr = self.quote(ensure_text(str(script)))
-        return "{} {}".format(cmd, scr).strip()
+        return f"{cmd} {scr}".strip()
 
     @staticmethod
     def norm_path(path):
@@ -203,18 +201,18 @@ class ActivationTester(object):
 
             buffer_cont = create_unicode_buffer(256)
             get_long_path_name = windll.kernel32.GetLongPathNameW
-            get_long_path_name(six.text_type(path), buffer_cont, 256)
+            get_long_path_name(str(path), buffer_cont, 256)
             result = buffer_cont.value or path
         return normcase(result)
 
 
 class RaiseOnNonSourceCall(ActivationTester):
     def __init__(self, of_class, session, cmd, activate_script, extension, non_source_fail_message):
-        super(RaiseOnNonSourceCall, self).__init__(of_class, session, cmd, activate_script, extension)
+        super().__init__(of_class, session, cmd, activate_script, extension)
         self.non_source_fail_message = non_source_fail_message
 
     def __call__(self, monkeypatch, tmp_path):
-        env, activate_script = super(RaiseOnNonSourceCall, self).__call__(monkeypatch, tmp_path)
+        env, activate_script = super().__call__(monkeypatch, tmp_path)
         process = Popen(
             self.non_source_activate(activate_script),
             stdout=subprocess.PIPE,
@@ -256,10 +254,10 @@ def activation_tester(activation_python, monkeypatch, tmp_path, is_inside_ci):
     def _tester(tester_class):
         tester = tester_class(activation_python)
         if not tester.of_class.supports(activation_python.creator.interpreter):
-            pytest.skip("{} not supported".format(tester.of_class.__name__))
+            pytest.skip(f"{tester.of_class.__name__} not supported")
         version = tester.get_version(raise_on_fail=is_inside_ci)
-        if not isinstance(version, six.string_types):
-            pytest.skip(msg=six.text_type(version))
+        if not isinstance(version, str):
+            pytest.skip(msg=str(version))
         return tester(monkeypatch, tmp_path)
 
     return _tester

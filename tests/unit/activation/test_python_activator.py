@@ -1,19 +1,17 @@
-from __future__ import absolute_import, unicode_literals
-
 import os
 import sys
 from ast import literal_eval
+from pathlib import Path
 from textwrap import dedent
 
 from virtualenv.activation import PythonActivator
 from virtualenv.info import IS_WIN, WIN_CPYTHON_2
-from virtualenv.util.six import ensure_text
 
 
 def test_python(raise_on_non_source_class, activation_tester):
     class Python(raise_on_non_source_class):
         def __init__(self, session):
-            super(Python, self).__init__(
+            super().__init__(
                 PythonActivator,
                 session,
                 sys.executable,
@@ -25,10 +23,10 @@ def test_python(raise_on_non_source_class, activation_tester):
 
         def env(self, tmp_path):
             env = os.environ.copy()
-            env[str("PYTHONIOENCODING")] = str("utf-8")
+            env["PYTHONIOENCODING"] = "utf-8"
             for key in {"VIRTUAL_ENV", "PYTHONPATH"}:
                 env.pop(str(key), None)
-            env[str("PATH")] = os.pathsep.join([str(tmp_path), str(tmp_path / "other")])
+            env["PATH"] = os.pathsep.join([str(tmp_path), str(tmp_path / "other")])
             return env
 
         @staticmethod
@@ -93,7 +91,7 @@ def test_python(raise_on_non_source_class, activation_tester):
                 act = ensure_text(act)
             cmd = self._invoke_script + [
                 "-c",
-                "exec(open({}).read())".format(repr(act)),
+                f"exec(open({repr(act)}).read())",
             ]
             return cmd
 

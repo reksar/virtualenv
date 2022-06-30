@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 import ast
 import difflib
 import gc
@@ -14,6 +12,7 @@ import sys
 import zipfile
 from collections import OrderedDict
 from itertools import product
+from pathlib import Path
 from stat import S_IREAD, S_IRGRP, S_IROTH
 from textwrap import dedent
 from threading import Thread
@@ -29,14 +28,13 @@ from virtualenv.create.via_global_ref.builtin.python2.python2 import Python2
 from virtualenv.discovery.py_info import PythonInfo
 from virtualenv.info import IS_PYPY, IS_WIN, PY2, PY3, fs_is_case_sensitive
 from virtualenv.run import cli_run, session_via_cli
-from virtualenv.util.path import Path
 from virtualenv.util.six import ensure_str, ensure_text
 
 CURRENT = PythonInfo.current_system()
 
 
 def test_os_path_sep_not_allowed(tmp_path, capsys):
-    target = str(tmp_path / "a{}b".format(os.pathsep))
+    target = str(tmp_path / f"a{os.pathsep}b")
     err = _non_success_exit_code(capsys, target)
     msg = (
         "destination {!r} must not contain the path separator ({}) as this"
@@ -58,7 +56,7 @@ def test_destination_exists_file(tmp_path, capsys):
     target = tmp_path / "out"
     target.write_text("")
     err = _non_success_exit_code(capsys, str(target))
-    msg = "the destination {} already exists and is a file".format(str(target))
+    msg = f"the destination {str(target)} already exists and is a file"
     assert msg in err, err
 
 
@@ -73,7 +71,7 @@ def test_destination_not_write_able(tmp_path, capsys):
     target.chmod(S_IREAD | S_IRGRP | S_IROTH)
     try:
         err = _non_success_exit_code(capsys, str(target))
-        msg = "the destination . is not write-able at {}".format(str(target))
+        msg = f"the destination . is not write-able at {str(target)}"
         assert msg in err, err
     finally:
         target.chmod(prev_mod)
@@ -84,8 +82,8 @@ def cleanup_sys_path(paths):
 
     paths = [p.resolve() for p in (Path(os.path.abspath(i)) for i in paths) if p.exists()]
     to_remove = [Path(HERE)]
-    if os.environ.get(str("PYCHARM_HELPERS_DIR")):
-        to_remove.append(Path(os.environ[str("PYCHARM_HELPERS_DIR")]).parent)
+    if os.environ.get("PYCHARM_HELPERS_DIR"):
+        to_remove.append(Path(os.environ["PYCHARM_HELPERS_DIR"]).parent)
         to_remove.append(Path(os.path.expanduser("~")) / ".PyCharm")
     result = [i for i in paths if not any(str(i).startswith(str(t)) for t in to_remove)]
     return result
@@ -120,7 +118,7 @@ _VENV_BUG_ON = (
             marks=pytest.mark.xfail(
                 reason="https://bitbucket.org/pypy/pypy/issues/3159/pypy36-730-venv-fails-with-copies-on-linux",
                 strict=True,
-            )
+            ),
         )
         if _VENV_BUG_ON and i[0][0] == "venv" and i[0][1] == "copies"
         else i
@@ -142,7 +140,7 @@ def test_create_no_seed(python, creator, isolated, system, coverage_env, special
         "",
         "--creator",
         creator_key,
-        "--{}".format(method),
+        f"--{method}",
     ]
     if isolated == "global":
         cmd.append("--system-site-packages")
@@ -358,9 +356,9 @@ def test_cross_major(cross_python, coverage_env, tmp_path, session_app_data, cur
     major, minor = cross_python.version_info[0:2]
     assert pip_scripts == {
         "pip",
-        "pip{}".format(major),
-        "pip-{}.{}".format(major, minor),
-        "pip{}.{}".format(major, minor),
+        f"pip{major}",
+        f"pip-{major}.{minor}",
+        f"pip{major}.{minor}",
     }
     coverage_env()
     env = PythonInfo.from_exe(str(result.creator.exe), session_app_data)
@@ -370,7 +368,7 @@ def test_cross_major(cross_python, coverage_env, tmp_path, session_app_data, cur
 def test_create_parallel(tmp_path, monkeypatch, temp_app_data):
     def create(count):
         subprocess.check_call(
-            [sys.executable, "-m", "virtualenv", "-vvv", str(tmp_path / "venv{}".format(count)), "--without-pip"],
+            [sys.executable, "-m", "virtualenv", "-vvv", str(tmp_path / f"venv{count}"), "--without-pip"],
         )
 
     threads = [Thread(target=create, args=(i,)) for i in range(1, 4)]
@@ -457,10 +455,10 @@ def list_files(path):
     for root, _, files in os.walk(path):
         level = root.replace(path, "").count(os.sep)
         indent = " " * 4 * level
-        result += "{}{}/\n".format(indent, os.path.basename(root))
+        result += f"{indent}{os.path.basename(root)}/\n"
         sub = " " * 4 * (level + 1)
         for f in files:
-            result += "{}{}\n".format(sub, f)
+            result += f"{sub}{f}\n"
     return result
 
 
@@ -478,7 +476,7 @@ def test_python_path(monkeypatch, tmp_path, python_path_on):
         cmd.extend(["-c", "import json; import sys; print(json.dumps(sys.path))"])
         return [i if case_sensitive else i.lower() for i in json.loads(subprocess.check_output(cmd))]
 
-    monkeypatch.delenv(str("PYTHONPATH"), raising=False)
+    monkeypatch.delenv("PYTHONPATH", raising=False)
     base = _get_sys_path()
 
     # note the value result.creator.interpreter.system_stdlib cannot be set, as that would disable our custom site.py
@@ -491,14 +489,14 @@ def test_python_path(monkeypatch, tmp_path, python_path_on):
         str(tmp_path / "base"),
         str(tmp_path / "base_sep") + os.sep,
         "name",
-        "name{}".format(os.sep),
+        f"name{os.sep}",
         str(tmp_path.parent / (ensure_text(tmp_path.name) + "_suffix")),
         ".",
         "..",
         "",
     ]
     python_path_env = os.pathsep.join(ensure_str(i) for i in python_paths)
-    monkeypatch.setenv(str("PYTHONPATH"), python_path_env)
+    monkeypatch.setenv("PYTHONPATH", python_path_env)
 
     extra_all = _get_sys_path(None if python_path_on else "-E")
     if python_path_on:
@@ -574,7 +572,7 @@ def test_zip_importer_can_import_setuptools(tmp_path):
             else:
                 folder.unlink()
     env = os.environ.copy()
-    env[str("PYTHONPATH")] = str(zip_path)
+    env["PYTHONPATH"] = str(zip_path)
     subprocess.check_call([str(result.creator.exe), "-c", "from setuptools.dist import Distribution"], env=env)
 
 

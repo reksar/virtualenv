@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 import itertools
 import sys
 from shutil import copy2
@@ -66,9 +64,9 @@ def test_base_bootstrap_via_pip_invoke(tmp_path, coverage_env, mocker, current_f
         str(tmp_path / "app-data"),
     ]
     for dist, version in versions.items():
-        create_cmd.extend(["--{}".format(dist), version])
+        create_cmd.extend([f"--{dist}", version])
     if no:
-        create_cmd.append("--no-{}".format(no))
+        create_cmd.append(f"--no-{no}")
     result = cli_run(create_cmd)
     coverage_env()
 
